@@ -1,11 +1,14 @@
-from datetime import date
+import sys
+from datetime import date, timedelta
 from decimal import Decimal
 
 from db import get_conn
 from sbp_client import fetch_series
 
-SERIES_ID = "TS_GP_IR_REPOMR_D.ORR"
-BACKFILL_START = "2015-05-25"   # first available date per the series page
+# Used only for a series with no stored data yet. Not verified for every series:
+# if the API rejects a date before a series begins, we'll set per-series starts.
+BACKFILL_START = "2010-01-01"
+REFETCH_DAYS = 30   # re-read recent days so revised values are caught
 
 SQL_LATEST = """
 SELECT o.obs_date, o.value
@@ -35,6 +38,29 @@ def finish_run(cur, run_id, status, rows, error=None):
         "status = ?, rows_loaded = ?, error_message = ? WHERE run_id = ?",
         status, rows, error, run_id,
     )
+
+
+def list_series():
+    conn = get_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT series_code FROM dbo.dim_series WHERE source = 'SBP' ORDER BY series_code")
+        return [r.series_code for r in cur.fetchall()]
+    finally:
+        conn.close()
+
+
+def next_start(series_id):
+    conn = get_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT MAX(obs_date) FROM dbo.market_observation WHERE series_code = ?", series_id)
+        last = cur.fetchone()[0]
+    finally:
+        conn.close()
+    if last is None:
+        return BACKFILL_START
+    return (last - timedelta(days=REFETCH_DAYS)).isoformat()
 
 
 def load_series(series_id, start, end):
@@ -73,5 +99,13 @@ def load_series(series_id, start, end):
 
 
 if __name__ == "__main__":
-    n = load_series(SERIES_ID, BACKFILL_START, date.today().isoformat())
-    print(f"rows inserted: {n}")
+    failures = []
+    for sid in list_series():
+        try:
+            n = load_series(sid, next_start(sid), date.today().isoformat())
+            print(f"{sid}: {n} new/changed rows")
+        except Exception as e:
+            print(f"{sid}: FAILED - {e}")
+            failures.append(sid)
+    if failures:
+        sys.exit(1)   # a non-zero exit lets n8n detect the failure later
