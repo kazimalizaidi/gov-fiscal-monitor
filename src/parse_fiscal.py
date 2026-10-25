@@ -81,7 +81,9 @@ def split_line(line):
 
 def parse_table1(pdf_path):
     text = extract_table1_text(pdf_path)
-    lines = text.splitlines()
+    lines = text.splitlines() 
+    if not re.search(r"in\s+million\s+of\s+pakistan\s+rupees", text, re.I):
+        raise RuntimeError("Unit check failed: header does not say 'In Million of Pakistan Rupees'")
 
     status = "PROVISIONAL" if any(l.strip().lower() == "provisional" for l in lines) else "FINAL"
 
@@ -125,15 +127,14 @@ def parse_table1(pdf_path):
 
 
 def run_checks(wide):
-    failures = []
+    results = []
     for name, lhs, parts in CHECKS:
         rhs = sum(sign * wide.loc[code] for code, sign in parts)
-        worst = (wide.loc[lhs] - rhs).abs().max()
+        worst = int((wide.loc[lhs] - rhs).abs().max())
         ok = worst <= TOL
         print(f"{'OK  ' if ok else 'FAIL'} {name}: max difference {worst:,}")
-        if not ok:
-            failures.append(name)
-    return failures
+        results.append((name, worst, ok))
+    return results
 
 
 if __name__ == "__main__":
@@ -144,7 +145,8 @@ if __name__ == "__main__":
     wide = wide.loc[[code for _, code in EXPECTED]]
     print(wide.to_string(formatters={c: "{:,}".format for c in wide.columns}))
     print()
-    failures = run_checks(wide)
+    results = run_checks(wide)
+    failures = [r for r in results if not r[2]]
     print(f"\n{len(CHECKS) - len(failures)} of {len(CHECKS)} checks passed")
     if failures:
         sys.exit(1)

@@ -4,7 +4,7 @@ from pathlib import Path
 
 from db import get_conn
 from load_market import start_run, finish_run
-from parse_fiscal import EXPECTED, parse_table1, run_checks
+from parse_fiscal import EXPECTED, TOL, parse_table1, run_checks
 
 SQL_LATEST = """
 SELECT f.period_end, f.line_code, f.value_pkr_mn, f.pub_status
@@ -16,9 +16,9 @@ WHERE f.fiscal_year = ?
                        AND line_code = f.line_code)
 """
 
-SQL_INSERT = """
-INSERT INTO dbo.fiscal_cumulative
-    (fiscal_year, period_end, line_code, value_pkr_mn, pub_status, source_file, run_id)
+SQL_DQ = """
+INSERT INTO dbo.dq_check_result
+    (run_id, source_file, fiscal_year, check_name, max_difference, tolerance, passed)
 VALUES (?, ?, ?, ?, ?, ?, ?)
 """
 
@@ -34,11 +34,14 @@ def load_fiscal(path):
 
         wide = df.pivot(index="line_code", columns="period_end", values="value_pkr_mn")
         wide = wide.loc[[code for _, code in EXPECTED]]
-        failures = run_checks(wide)
+        results = run_checks(wide)
+        fiscal_year = int(df["fiscal_year"].iloc[0])
+        cur.executemany(SQL_DQ, [(run_id, path.name, fiscal_year, name, worst, TOL, int(ok))
+                                 for name, worst, ok in results])
+        conn.commit()   # keep the check results even if we refuse the load
+        failures = [name for name, _, ok in results if not ok]
         if failures:
             raise RuntimeError("Reconciliation failed, nothing loaded: " + "; ".join(failures))
-
-        fiscal_year = int(df["fiscal_year"].iloc[0])
         cur.execute(SQL_LATEST, fiscal_year)
         existing = {
             (r.period_end, r.line_code): (Decimal(r.value_pkr_mn), r.pub_status)
