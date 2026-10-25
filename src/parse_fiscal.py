@@ -71,7 +71,12 @@ def normalise(label):
 
 
 def split_line(line):
-    line = re.sub(r"(\d)\s+,", r"\1,", line)         # repairs "4 ,065"
+    # The PDF text layer sometimes splits the first digit of a number from the
+    # rest: "2 ,016,977", "1 48,162", "1 0,016,917". Join a lone digit to the
+    # digit or comma that follows it. The lookbehind keeps it from touching
+    # digits inside other tokens, such as the "1." of "1. Total Revenue".
+    line = re.sub(r"(?<!\S)(\d) (?=[\d,])", r"\1", line)
+    line = re.sub(r"(\d)\s+,", r"\1,", line)         # older repair: "4 ,065"
     toks = line.split()
     if len(toks) < 5 or not all(VAL.match(t) for t in toks[-4:]):
         return None
