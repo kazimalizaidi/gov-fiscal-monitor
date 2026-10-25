@@ -3,3 +3,4 @@
 data/raw/
 reports/
 __pycache__/
+logs/
