@@ -1,4 +1,4 @@
-# 🏛️ Automated Government Fiscal Budget Liquidity Monitor — Pakistan
+# 🏛️ Automated Government Fiscal Budget Liquidity Monitor - Pakistan
 
 ![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python)
 ![SQL Server](https://img.shields.io/badge/SQL%20Server-Data%20Warehouse-CC2927?logo=microsoftsqlserver)
@@ -190,18 +190,8 @@ Federal tax as a percentage of the original target, phased by the previous year'
 
 ---
 
-## 🧰 Engineering Lessons
-
-- **The PDF text layer is not consistent across years.** The FY2022-23 file splits the first digit of numbers (`1 48,162`, `1 0,016,917`), a pattern the earlier files did not have. The label-order check stopped the load before any wrong value reached the database. After the parser repair, all three previously loaded years re-loaded with zero changes, and the nine reconciliation checks confirmed the new year.
-- **A re-run that inserts nothing does not test the insert.** A missing `SQL_INSERT` constant went unnoticed until the first load of a new year, because every earlier re-run inserted zero rows. The test suite now runs the real insert and lookup statements inside a transaction that is rolled back.
-- **A script's exit code is the contract with the scheduler.** `run_pipeline.py` exits 1 on any failure, and an invalid key and a missing key were both tested against it. n8n reports a non-zero exit as a failed node, which the failure branch catches.
-- **Secrets stay out of errors.** The API key travels in a URL parameter, so the client re-raises request errors without the URL.
-
----
-
 ## 💡 Recommendations
 
-- Load more fiscal years before tuning any threshold. Three years of R1 cannot support an error rate.
 - Add a monthly source (for example FBR's monthly collection releases) for faster signals, since the Ministry of Finance report is quarterly.
 - Compare federal development spending with a federal-only table (Table 4) before using a development-spending trigger against a federal budget figure.
 - Keep every published version of a figure. Revisions and provisional labels matter for any backtest that claims to reflect what was known at the time.
@@ -311,7 +301,7 @@ python -m pytest -v
 
 # 📌 Future Improvements
 
-- Automated download of the Ministry of Finance PDFs (not tested; the site's terms and behaviour toward scripts have not been checked)
+- Automated download of the Ministry of Finance PDFs 
 - A monthly collection source for faster signals
 - Federal-only comparisons using Table 4, and provincial detail from Table 5
 - More fiscal years, so thresholds can be reviewed against more than three observations
@@ -330,6 +320,12 @@ python -m pytest -v
 - **Budget in Brief 2026-27 (contains the original FY2025-26 budget):** [finance.gov.pk](https://www.finance.gov.pk/budget/budget_2026_27/Budget_in_Brief.pdf)
 
 ---
+
+# 🎧 Project Soundtrack
+
+*This track was on loop while working on this project*
+
+[when i close my eyes - Lonnex](https://open.spotify.com/track/3yhtzhGYHo3IFzgZNiO0Dz?si=014f450f61e74d87)
 
 **Star this repository if you found it interesting!** ⭐
 
