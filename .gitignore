@@ -4,3 +4,4 @@ data/raw/
 reports/
 __pycache__/
 logs/
+.pytest_cache/
