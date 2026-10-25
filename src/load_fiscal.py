@@ -15,6 +15,11 @@ WHERE f.fiscal_year = ?
                        AND period_end = f.period_end
                        AND line_code = f.line_code)
 """
+SQL_INSERT = """
+INSERT INTO dbo.fiscal_cumulative
+    (fiscal_year, period_end, line_code, value_pkr_mn, pub_status, source_file, run_id)
+VALUES (?, ?, ?, ?, ?, ?, ?)
+"""
 
 SQL_DQ = """
 INSERT INTO dbo.dq_check_result
