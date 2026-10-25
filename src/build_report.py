@@ -21,6 +21,25 @@ SHEETS = [
                prior_year_share_pct, pct_of_phased_target
         FROM dbo.vw_r1_pace
         ORDER BY fiscal_year DESC, target_type, period_end"""),
+        ("Backtest R1", """
+        SELECT fiscal_year, period_end, pct_of_phased_target,
+               CASE WHEN pct_of_phased_target < 85 THEN 1 ELSE 0 END AS flag_at_85,
+               CASE WHEN pct_of_phased_target < 90 THEN 1 ELSE 0 END AS flag_at_90,
+               CASE WHEN pct_of_phased_target < 95 THEN 1 ELSE 0 END AS flag_at_95,
+               CASE WHEN pct_of_phased_target < 97 THEN 1 ELSE 0 END AS flag_at_97
+        FROM dbo.vw_r1_pace
+        WHERE target_type = 'BUDGET'
+        ORDER BY fiscal_year, period_end"""),
+    ("Backtest R2-R4", """
+        SELECT m.fiscal_year, m.period_end,
+               m.r2_dev_pct_of_prior,
+               m.r2_dev_pct_of_prior - (SELECT warn_threshold FROM dbo.rule_def WHERE rule_code = 'R2_DEV_PACE') AS r2_margin,
+               m.r3_burden_change_pp,
+               (SELECT warn_threshold FROM dbo.rule_def WHERE rule_code = 'R3_INTEREST') - m.r3_burden_change_pp AS r3_margin,
+               m.r4_primary_balance AS r4_primary_balance_pkr_mn
+        FROM dbo.vw_rule_metrics m
+        WHERE m.r2_dev_pct_of_prior IS NOT NULL
+        ORDER BY m.fiscal_year, m.period_end"""),
     ("Quarterly flows", """
         SELECT q.fiscal_year, q.period_end, l.line_label, q.line_code,
                q.cumulative_pkr_mn, q.quarter_flow_pkr_mn, q.pub_status
@@ -53,7 +72,8 @@ HEADER_FONT = Font(bold=True, color="FFFFFF")
 SEV_FILL = {"WARN": PatternFill("solid", fgColor="FFE699"),
             "CRITICAL": PatternFill("solid", fgColor="F4B084")}
 TWO_DP = {"metric_value", "pct_of_phased_target", "prior_year_share_pct", "ratio_to_others",
-          "warn_threshold", "critical_threshold", "max_difference", "tolerance", "value"}
+          "warn_threshold", "critical_threshold", "max_difference", "tolerance", "value",
+          "r2_dev_pct_of_prior", "r2_margin", "r3_burden_change_pp", "r3_margin"}
 
 
 def clean(v):
@@ -154,8 +174,8 @@ def main():
         "TARGETS: R1 compares Table 1 federal tax with the federal FBR taxes target. SBP Bulletin figures agree to rounding, but this is a comparison of related, not formally identical, definitions.",
         "PHASING: the annual target is phased by the previous year's cumulative share of federal tax. This is a modelling assumption, not a published schedule.",
         "ORIGINAL vs REVISED: the revised estimate is set with part of the year observed, so it is not an independent yardstick. The BUDGET variant is the early-warning one.",
-        "LIMITS: three fiscal years are loaded. Flags are screening signals, not forecasts. R2, R3 and R4 have not fired on real data and were tested on constructed scenarios only.",
-        "",
+        "LIMITS: four fiscal years are loaded (FY2023 to FY2026); rule R1 can run on three of them, because it needs the previous year for phasing. Flags are screening signals, not forecasts. R2 and R4 have not fired on real data; R3 fired once (quarter ending 2023-12-31). All four rules were also tested on constructed scenarios.",
+        "BACKTEST: the fiscal figures are the latest published versions, not what was known at the time. Of the three years R1 can run on, FY2025 and FY2026 ended below the original target and FY2024 nearly met it (98.9%), so there are too few years to estimate an error rate or tune thresholds. Flags at 95% cover 8 of 12 quarters; flags at 90% and 85% cover none.",
         "RULE THRESHOLDS (stored in dbo.rule_def):",
     ]
     for line in lines:
