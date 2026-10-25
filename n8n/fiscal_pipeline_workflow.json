@@ -1,0 +1,94 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 18,
+              "triggerAtMinute": 7
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "3b8faff5-6f1c-4455-ad6d-ebe5b0dac4a4",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "command": "\"<PROJECT_ROOT>\\.venv\\Scripts\\python.exe\" \"<PROJECT_ROOT>\\src\\run_pipeline.py\""
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "f9bbd7c7-2a95-4e8d-a76b-e510ac3c33c3",
+      "name": "Execute Command",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "command": "\"<PROJECT_ROOT>\\.venv\\Scripts\\python.exe\" \"<PROJECT_ROOT>\\src\\log_alert.py\" \"Scheduled fiscal pipeline failed - see etl_run_log\""
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        448,
+        96
+      ],
+      "id": "560f6503-f1e6-491f-b0e2-ebe55144b288",
+      "name": "Execute Command1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Execute Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Command": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Execute Command1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "timezone": "Asia/Karachi",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "87825571-67ec-40dd-935e-de51933215a8",
+  "meta": {
+    "instanceId": "70403b3b5b0a1449ecfd30300201fb23fbdd1085afa682bc3e4d81fcef761a49"
+  },
+  "nodeGroups": [],
+  "id": "RHBbwE3SbYYfd3Nw",
+  "tags": []
+}
