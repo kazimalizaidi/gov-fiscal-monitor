@@ -1,4 +1,4 @@
-# 🏛️ Automated Government Fiscal Budget Liquidity Monitor — Pakistan
+# 🏛️ Automated Government Fiscal Budget Liquidity Monitor - Pakistan
 
 ![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python)
 ![SQL Server](https://img.shields.io/badge/SQL%20Server-Data%20Warehouse-CC2927?logo=microsoftsqlserver)
